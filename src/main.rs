@@ -1,11 +1,16 @@
 use std::net::{TcpListener, TcpStream};
 use std::io::{Read, Write};
+use std::fs;
 
 fn get_web_page() -> String{
     let mut page_html = String::new();
-    page_html.push_str("<html><head><title>Hola manola</title>");
-    page_html.push_str("<link href=\"https://unpkg.com/tailwindcss@^1.0/dist/tailwind.min.css\" rel=\"stylesheet\"></head>");
-    page_html.push_str("<body class=\"bg-yellow-400\"><div class=\"text-center w-1/3 h-80 bg-white mt-10\">Hola gente linda, es mi pagina rust</div></body></html>");
+    let first_part = fs::read_to_string("src/firstPart.html")
+        .expect("Something went wrong reading the file");
+    page_html.push_str(&first_part);
+    page_html.push_str("19");
+    let second_part = fs::read_to_string("src/secondPart.html")
+        .expect("Something went wrong reading the file");
+    page_html.push_str(&second_part);
     return page_html;
 }
 
