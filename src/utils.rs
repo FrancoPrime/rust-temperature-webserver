@@ -19,7 +19,7 @@ pub fn remaining_length_read(stream: &mut TcpStream) -> Result<usize, String> {
             return Err(format!("Error al leer del stream: {}", e.to_string()));
         }
         byte = buffer[0];
-        value += ((byte & 0x7F) as usize) * &multiplier;
+        value += ((byte & 0x7F) as usize) * multiplier;
         multiplier *= 0x80;
         if multiplier > MAX_MULTIPLIER {
             return Err("Malformed reamining length".to_string());
