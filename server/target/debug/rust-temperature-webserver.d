@@ -1,0 +1,1 @@
+/home/user/Desktop/rust-temperature-webserver/target/debug/rust-temperature-webserver: /home/user/Desktop/rust-temperature-webserver/src/main.rs /home/user/Desktop/rust-temperature-webserver/src/mqtt_client.rs /home/user/Desktop/rust-temperature-webserver/src/page_manager.rs /home/user/Desktop/rust-temperature-webserver/src/utils.rs
