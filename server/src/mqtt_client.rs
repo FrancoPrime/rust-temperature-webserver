@@ -7,7 +7,8 @@ use std::thread::sleep;
 use std::time::Duration;
 
 static TEMPERATURE_TOPIC: &str = "RustTemperature";
-static CLIENT_ID: &str = "temperatureBroker";
+static CLIENT_ID: &str = "temperatureServer";
+static DEFAULT_IP: &str = "127.0.0.1:1883";
 static KEEP_ALIVE: u8 = 200;
 
 pub struct MqttClient {
@@ -15,10 +16,25 @@ pub struct MqttClient {
 }
 
 impl MqttClient {
-    pub fn new(_file_path: &str) -> Self {
-        MqttClient {
-            full_ip: "127.0.0.1:1883".to_owned(),
+    pub fn new(file_path: &str) -> Self {
+        let mut full_ip = DEFAULT_IP.to_owned();
+        let file: String = match std::fs::read_to_string(file_path) {
+            Ok(file) => file,
+            Err(_) => "Error when trying to open the file".to_string(),
+        };
+        let lines = file.lines();
+        for line in lines {
+            let name_and_value: Vec<&str> = line.split('=').collect();
+            let config_name: String = name_and_value[0]
+                .to_lowercase()
+                .replace(' ', "")
+                .to_string();
+            let value: String = name_and_value[1].replace(' ', "").to_string();
+            if config_name.eq("full_ip") {
+                full_ip = value;
+            }
         }
+        MqttClient { full_ip }
     }
 
     fn subscribe_to_temperature(&self, stream: &mut TcpStream) {
