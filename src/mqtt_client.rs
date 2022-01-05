@@ -2,8 +2,13 @@ use crate::utils::{bytes2string, remaining_length_read};
 use std::io::{Read, Write};
 use std::net::TcpStream;
 use std::sync::{Arc, Mutex};
+use std::thread;
+use std::thread::sleep;
+use std::time::Duration;
 
 static TEMPERATURE_TOPIC: &str = "RustTemperature";
+static CLIENT_ID: &str = "temperatureBroker";
+static KEEP_ALIVE: u8 = 200;
 
 pub struct MqttClient {
     full_ip: String,
@@ -27,12 +32,12 @@ impl MqttClient {
         buffer_subscribe.push(0);
         buffer_subscribe.push(topic_subscribed_bytes.len() as u8);
         buffer_subscribe.append(&mut topic_subscribed_bytes);
-        buffer_subscribe.push(1);
+        buffer_subscribe.push(0);
         stream.write_all(&buffer_subscribe).unwrap();
     }
 
     fn connect_and_wait_for_connack(&self, stream: &mut TcpStream) {
-        let client_id = "temperatureBroker".to_owned();
+        let client_id = CLIENT_ID.to_owned();
         let client_id_bytes = client_id.as_bytes();
         let mut buffer: Vec<u8> = Vec::with_capacity(14 + client_id_bytes.len());
         buffer.push(0x10); //Connect packet
@@ -46,7 +51,7 @@ impl MqttClient {
         buffer.push(4); // Protocol Level
         buffer.push(0);
         buffer.push(0);
-        buffer.push(200);
+        buffer.push(KEEP_ALIVE);
         buffer.push(0);
         buffer.push(2);
         for byte in client_id_bytes.iter() {
@@ -90,12 +95,13 @@ impl MqttClient {
                     let topic_name = bytes2string(&buffer_packet[2..(2 + &topic_name_len)]);
                     if topic_name.eq(TEMPERATURE_TOPIC) {
                         let content = bytes2string(
-                            &buffer_packet[(4 + &topic_name_len)..buffer_packet.len()],
+                            &buffer_packet[(2 + &topic_name_len)..buffer_packet.len()],
                         );
                         let new_temperature;
                         match content.parse::<i32>() {
                             Ok(val) => {
                                 new_temperature = val;
+                                println!("Nuevo valor: {}", val);
                             }
                             Err(_) => {
                                 println!("Error while reading");
@@ -119,10 +125,21 @@ impl MqttClient {
         }
     }
 
+    pub fn send_pingreq_packet(stream: &mut TcpStream) {
+        let buffer = [0xC0, 0_u8];
+        stream.write_all(&buffer).unwrap();
+    }
+
     pub fn run(&self, lock: Arc<Mutex<i32>>) {
         let mut stream = TcpStream::connect(&self.full_ip).unwrap();
         self.connect_and_wait_for_connack(&mut stream);
+        println!("Connected to MQTT Server");
         self.subscribe_to_temperature(&mut stream);
+        let mut pingreq_stream = stream.try_clone().expect("Cannot clone stream");
+        thread::spawn(move || loop {
+            MqttClient::send_pingreq_packet(&mut pingreq_stream);
+            sleep(Duration::from_secs(KEEP_ALIVE as u64));
+        });
         self.wait_for_publishes(&mut stream, lock);
     }
 }
