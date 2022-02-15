@@ -65,7 +65,7 @@ impl MqttClient {
         buffer.push(84); // T
         buffer.push(84); // T
         buffer.push(4); // Protocol Level
-        buffer.push(0);
+        buffer.push(2);
         buffer.push(0);
         buffer.push(KEEP_ALIVE);
         buffer.push(0);

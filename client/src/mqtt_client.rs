@@ -6,7 +6,7 @@ use std::thread::sleep;
 use std::time::Duration;
 
 static TEMPERATURE_TOPIC: &str = "RustTemperature";
-static CLIENT_ID: &str = "temperatureOracle";
+static CLIENT_ID: &str = "oracle";
 static DEFAULT_IP: &str = "127.0.0.1:1883";
 static KEEP_ALIVE: u8 = 200;
 
@@ -41,17 +41,17 @@ impl MqttClient {
             let mut rng = rand::thread_rng();
             let temperature: i32 = rng.gen_range(-10..45);
             let mut temperature_str = temperature.to_string().as_bytes().to_vec();
-            let mut buffer_subscribe: Vec<u8> = Vec::new();
+            let mut buffer_publish: Vec<u8> = Vec::new();
             let topic_subscribed = TEMPERATURE_TOPIC.to_owned();
             let mut topic_subscribed_bytes: Vec<u8> = topic_subscribed.as_bytes().to_vec();
-            buffer_subscribe.push(0x30); //Publish code
-            buffer_subscribe.push((2 + topic_subscribed_bytes.len() + temperature_str.len()) as u8);
-            buffer_subscribe.push(0);
-            buffer_subscribe.push(topic_subscribed_bytes.len() as u8);
-            buffer_subscribe.append(&mut topic_subscribed_bytes);
-            buffer_subscribe.append(&mut temperature_str);
+            buffer_publish.push(0x30); //Publish code
+            buffer_publish.push((2 + topic_subscribed_bytes.len() + temperature_str.len()) as u8);
+            buffer_publish.push(0);
+            buffer_publish.push(topic_subscribed_bytes.len() as u8);
+            buffer_publish.append(&mut topic_subscribed_bytes);
+            buffer_publish.append(&mut temperature_str);
 
-            stream.write_all(&buffer_subscribe).unwrap();
+            stream.write_all(&buffer_publish).unwrap();
             println!("Envio una nueva temperatura: {}", temperature);
             sleep(Duration::from_secs(10));
         }
@@ -70,7 +70,7 @@ impl MqttClient {
         buffer.push(84); // T
         buffer.push(84); // T
         buffer.push(4); // Protocol Level
-        buffer.push(0);
+        buffer.push(2);
         buffer.push(0);
         buffer.push(KEEP_ALIVE);
         buffer.push(0);
